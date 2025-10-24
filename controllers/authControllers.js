@@ -69,9 +69,14 @@ exports.verifyEmailOtp = async (req, res) => {
       return res.status(400).json({ message: "invalid otp", success: false });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // 🚨 TEMPORARY FIX: Add unique phone instead of null
+    const uniquePhone = `email-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const user = await userModels.create({
       name,
       email,
+      phone: uniquePhone,  // 🚨 TEMPORARY FIX - ADD THIS LINE
       password: hashedPassword,
     });
     await EmailOtp.deleteMany({ email });
@@ -83,9 +88,15 @@ exports.verifyEmailOtp = async (req, res) => {
         message: "otp verified successfully",
         success: true,
         token,
-        user,
+        user: {  
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        },
       });
   } catch (error) {
+    console.error('OTP Verification Error:', error);
     res.status(500).json({ message: "unable to verify otp", success: false });
   }
 };
